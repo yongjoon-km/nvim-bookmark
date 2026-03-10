@@ -46,6 +46,16 @@ local bookmark_list = {
     },
 }
 
-local data = serialize_bookmark_list(bookmark_list)
-save_bookmark(data)
+function get_bookmark_from_current_location()
+    local file_path = vim.fn.expand('%:p')
+    local line = vim.fn.line('.')
+    return {
+        path = file_path,
+        line = line,
+    }
+end
+
+save_bookmark(serialize_bookmark_list(bookmark_list))
+table.insert(bookmark_list, get_bookmark_from_current_location())
+save_bookmark(serialize_bookmark_list(bookmark_list))
 
