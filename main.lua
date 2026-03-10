@@ -5,13 +5,15 @@ if not vim.uv.fs_stat(data_home) then
     vim.fn.mkdir(data_home)
 end
 
-local file = io.open(storage, "w+")
-if file then
-    file:close()
+if not vim.uv.fs_stat(storage) then
+    local file = io.open(storage, "w+")
+    if file then
+        file:close()
+    end
 end
 
 function save_bookmark(data)
-    local file = io.open(storage, "a+")
+    local file = io.open(storage, "w+")
     if not file then
         return
     end
@@ -31,20 +33,29 @@ function serialize_bookmark_list(bookmark_list)
     return result
 end
 
-local bookmark_list = {
-    {
-        path = "/home/yongjoon/repos/nvim-bookmark",
-        line = 22
-    },
-    {
-        path = "/home/yongjoon/repos/nvim-bookmark",
-        line = 23
-    },
-    {
-        path = "/home/yongjoon/repos/nvim-bookmark",
-        line = 24
-    },
-}
+function load_bookmark()
+    local file = io.open(storage, "r+")
+    if not file then
+        return
+    end
+
+    local bookmark_list = {}
+    local line
+    while true do
+        line = file:read("*l")
+        if line == nil then
+            break
+        end
+        local path, line_num = string.gmatch(line, "([^%%%%]+)%%%%(%d+)")()
+        local bookmark = {
+            path = path,
+            line = line_num,
+        }
+        table.insert(bookmark_list, bookmark)
+    end
+    file:close()
+    return bookmark_list
+end
 
 function get_bookmark_from_current_location()
     local file_path = vim.fn.expand('%:p')
@@ -55,7 +66,6 @@ function get_bookmark_from_current_location()
     }
 end
 
-save_bookmark(serialize_bookmark_list(bookmark_list))
+local bookmark_list = load_bookmark()
 table.insert(bookmark_list, get_bookmark_from_current_location())
 save_bookmark(serialize_bookmark_list(bookmark_list))
-
