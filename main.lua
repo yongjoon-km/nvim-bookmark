@@ -67,5 +67,16 @@ function get_bookmark_from_current_location()
 end
 
 local bookmark_list = load_bookmark()
-table.insert(bookmark_list, get_bookmark_from_current_location())
-save_bookmark(serialize_bookmark_list(bookmark_list))
+--table.insert(bookmark_list, get_bookmark_from_current_location())
+--save_bookmark(serialize_bookmark_list(bookmark_list))
+
+local bookmark_str_list = {}
+for _, bookmark in pairs(bookmark_list) do
+    table.insert(bookmark_str_list, serialize_bookmark(bookmark))
+end
+
+vim.ui.select(bookmark_str_list, {
+    prompt = 'Select your bookmark',
+}, function(choice)
+    print("my choice is " .. choice)
+end)
