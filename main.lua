@@ -33,6 +33,10 @@ function serialize_bookmark_list(bookmark_list)
     return result
 end
 
+function deserialize_bookmark_str(bookmark_str)
+    return string.gmatch(bookmark_str, "([^%%%%]+)%%%%(%d+)")()
+end
+
 function load_bookmark()
     local file = io.open(storage, "r+")
     if not file then
@@ -46,7 +50,7 @@ function load_bookmark()
         if line == nil then
             break
         end
-        local path, line_num = string.gmatch(line, "([^%%%%]+)%%%%(%d+)")()
+        local path, line_num = deserialize_bookmark_str(line)
         local bookmark = {
             path = path,
             line = line_num,
@@ -78,5 +82,6 @@ end
 vim.ui.select(bookmark_str_list, {
     prompt = 'Select your bookmark',
 }, function(choice)
-    print("my choice is " .. choice)
+    local path, line_num = deserialize_bookmark_str(choice)
+    vim.cmd("edit " .. "+" .. line_num .. " " .. path)
 end)
