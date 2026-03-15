@@ -24,13 +24,13 @@ function save_bookmark(data)
 end
 
 function serialize_bookmark(bookmark)
-    return bookmark.path .. "%%" .. bookmark.line .. "\n"
+    return bookmark.path .. "%%" .. bookmark.line
 end
 
 function serialize_bookmark_list(bookmark_list)
     local result = ""
     for _, bookmark in pairs(bookmark_list) do
-        result = result .. serialize_bookmark(bookmark)
+        result = result .. serialize_bookmark(bookmark) .. "\n"
     end
     return result
 end
@@ -94,6 +94,61 @@ M.select_bookmark = function()
         local path, line_num = deserialize_bookmark_str(choice)
         vim.cmd("edit " .. "+" .. line_num .. " " .. path)
     end)
+end
+
+M.delete_bookmark = function()
+    -- TODO: Try to use only native buffer for multiple selection and remove 
+    -- telescope dependency.
+    local pickers = require("telescope.pickers")
+    local finders = require("telescope.finders")
+    local conf = require("telescope.config").values
+    local actions = require("telescope.actions")
+    local action_state = require("telescope.actions.state")
+
+    local bookmark_list = load_bookmark()
+    local bookmark_str_list = {}
+    for _, bookmark in ipairs(bookmark_list) do
+        table.insert(bookmark_str_list, serialize_bookmark(bookmark))
+    end
+
+    local function multi_select_example(opts)
+        opts = opts or {}
+        pickers.new(opts, {
+            prompt_title = "Select bookmarks to delete",
+            finder = finders.new_table { results = opts.bookmark_list },
+            sorter = conf.generic_sorter(opts),
+            attach_mappings = function(prompt_bufnr, map)
+                actions.select_default:replace(function()
+                    local picker = action_state.get_current_picker(prompt_bufnr)
+                    local selections = picker:get_multi_selection()
+
+                    -- If nothing is marked with <Tab>, take the current selection
+                    if vim.tbl_isempty(selections) then
+                        table.insert(selections, action_state.get_selected_entry())
+                    end
+
+                    actions.close(prompt_bufnr)
+
+                    -- Remove selected bookmark and save
+                    for _, v in ipairs(selections) do
+                        for j, o in ipairs(bookmark_str_list) do
+                            if v[1] == o then
+                                table.remove(bookmark_str_list, j)
+                            end
+                        end
+                    end
+
+                    local result_bookmark = ""
+                    for _, v in ipairs(bookmark_str_list) do
+                        result_bookmark = result_bookmark .. v .. "\n"
+                    end
+                    save_bookmark(result_bookmark)
+                end)
+                return true
+            end,
+        }):find()
+    end
+    multi_select_example({bookmark_list = bookmark_str_list})
 end
 
 return M
