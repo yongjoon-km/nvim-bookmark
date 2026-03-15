@@ -88,6 +88,9 @@ M.select_bookmark = function()
     vim.ui.select(bookmark_str_list, {
         prompt = 'Select your bookmark',
     }, function(choice)
+        if choice == nil then
+            return
+        end
         local path, line_num = deserialize_bookmark_str(choice)
         vim.cmd("edit " .. "+" .. line_num .. " " .. path)
     end)
